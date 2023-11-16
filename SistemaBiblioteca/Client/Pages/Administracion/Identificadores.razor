@@ -1,0 +1,200 @@
+﻿@page "/pages/identificadores"
+
+@inject NavigationManager _navigationServicio;
+@using SICS.Client.Pages.Modales;
+@inject MenuService _menuServicio;
+@inject IIdentificadoresServicio _identificadoresServicio;
+@inject IDialogService _dialogServicio
+@inject ISnackbar _snackBar
+@inject SweetAlertService Swal;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           OnClick="AbrirNuevoIdentificador">
+                    Nuevo Identificador
+                </MudButton>
+            </MudItem>
+            
+            <MudItem xs="12">
+
+                <MudTable Items="@_listaIdentificadores"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<IdentificadoresDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Código identificador</MudTh>
+                        <MudTh>Prefijo</MudTh>
+                        <MudTh>Descripción</MudTh>
+                        <MudTh>Último número registrado</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="identificadorRow">
+                       
+                        <MudTd DataLabel="Código identificador">@identificadorRow.IdNumeroCorrelativo</MudTd>
+                        <MudTd DataLabel="Prefijo">@identificadorRow.Prefijo</MudTd>
+                        <MudTd DataLabel="Descripción">@(identificadorRow.Tipo)</MudTd>
+                            <MudTd DataLabel="Cantidad ">@(identificadorRow.UltimoNumero)</MudTd>
+                            <MudTd DataLabel="">
+                                <MudFab Color="Color.Primary"
+                                        StartIcon="@Icons.Material.Filled.Edit"
+                                        Size="Size.Small"
+                                        IconSize="Size.Small"
+                                        OnClick="@(() => AbrirEditarIdentificador(identificadorRow))" /> 
+                                <MudFab Color="Color.Error"
+                                        StartIcon="@Icons.Material.Filled.Delete"
+                                        Size="Size.Small"
+                                        IconSize="Size.Small"
+                                        OnClick="@(() => EliminarIdentificador(identificadorRow))" />
+                            </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    List<IdentificadoresDTO> _listaIdentificadores = new List<IdentificadoresDTO>();
+    private string searchString1 = "";
+    private IdentificadoresDTO selectedItem1 = null;
+    private bool _loading = true;
+    string codigoConsumidor = "";
+    string estadoPrestamo = "Todos";
+
+
+    private async Task ObtenerIdentificadores()
+    {
+        var result = await _identificadoresServicio.Lista();
+
+        if (result.status)
+        {
+            _listaIdentificadores = (List<IdentificadoresDTO>)result.value!;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Identificadoress", href: null));
+        await ObtenerIdentificadores();
+        _loading = false;
+    }
+
+    private bool FilterFunc1(IdentificadoresDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(IdentificadoresDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        //if (element.IdEstadoIdentificadoresNavigation.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+        //if (element.IdConsumidorNavigation.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+        //if (string.Concat(element.IdConsumidorNavigation.Nombre, element.IdConsumidorNavigation.Apellido)
+        //.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+
+        return false;
+    }
+
+    private async Task Buscar()
+    {
+        _loading = true;
+        //var result = await _identificadoresServicio.Buscar(estadoPrestamo.ToLower(), codigoConsumidor == "" ? "na" : codigoConsumidor);
+        //if (result.status)
+        //{
+        //    _listaIdentificadores = (List<IdentificadoresDTO>)result.value!;
+        //}
+        _loading = false;
+    }
+
+    private async Task VerDetalle(IdentificadoresDTO modelo)
+    {
+        var parametros = new DialogParameters { ["_prestamo"] = modelo };
+        string titulo = "";
+
+        //if (modelo.IdEstadoIdentificadoresNavigation!.IdEstadoIdentificadores == 1)
+        //    titulo = "Devolver Item";
+        //else
+        //    titulo = "Detalle Devolución";
+
+
+        var dialogo = _dialogServicio.Show<DetallePrestamo>(titulo, parametros);
+        var resultado = await dialogo.Result;
+        if (!resultado.Canceled)
+        {
+            _loading = true;
+            await ObtenerIdentificadores();
+            _loading = false;
+        }
+    }
+
+    private async Task EliminarIdentificador(IdentificadoresDTO Identificador)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta seguro?",
+                Text = $"Eliminar Identificador: {Identificador.Prefijo} - {Identificador.Tipo}",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Si, eliminar",
+                CancelButtonText = "No, volver"
+            });
+
+        if (result.IsConfirmed)
+        {
+            var resultado = await _identificadoresServicio.Eliminar(Identificador.IdNumeroCorrelativo);
+
+            if (resultado)
+            {
+                _snackBar.Add("El Consumidor fue eliminado", Severity.Success, a => a.VisibleStateDuration = 600);
+                await ObtenerIdentificadores();
+            }
+            else
+                _snackBar.Add("No se pudo eliminar", Severity.Error, a => a.VisibleStateDuration = 500);
+        }
+
+    }
+
+    private async Task AbrirNuevoIdentificador()
+    {
+        var dialogo = _dialogServicio.Show<MdIdentificador>("Nuevo Identificador");
+        var resultado = await dialogo.Result;
+
+        if (!resultado.Canceled)
+        {
+            await ObtenerIdentificadores();
+        }
+    }
+
+    private async Task AbrirEditarIdentificador(IdentificadoresDTO identificador)
+    {
+        var parametros = new DialogParameters { ["_identificador"] = identificador };
+
+        var dialogo = _dialogServicio.Show<MdIdentificador>("Editar Identificador", parametros);
+        var resultado = await dialogo.Result;
+        if (!resultado.Canceled)
+        {
+            await ObtenerIdentificadores();
+        }
+    }
+}

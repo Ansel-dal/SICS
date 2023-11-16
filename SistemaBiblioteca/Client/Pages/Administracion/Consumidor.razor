@@ -1,0 +1,113 @@
+﻿@page "/pages/Consumidor"
+@page "/pages/Consumidor/{idConsumidor:int}"
+@inject MenuService _menuServicio;
+@inject SweetAlertService Swal;
+@inject ISnackbar _snackBar
+@inject NavigationManager _navigationServicio;
+
+@inject IConsumidorServicio _ConsumidorServicio;
+
+<EditForm Model="@_Consumidor" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard>
+               
+                <MudCardContent>
+                    <MudText Align="Align.Left" >@titulo</MudText>
+                    <MudTextField Label="Codigo" ReadOnly="true" Variant="Variant.Outlined" Class="@("mt-4 " + noneCodigo)"
+                                  @bind-Value="_Consumidor.Codigo" />
+                    
+                    <MudTextField Label="Nombre" Variant="Variant.Outlined" Class="mt-4"
+                                  @bind-Value="_Consumidor.Nombre" For="@(() => _Consumidor.Nombre)" />
+
+                    <MudTextField Label="Apellido"  Variant="Variant.Outlined" Class="mt-4"
+                                  @bind-Value="_Consumidor.Apellido" For="@(() => _Consumidor.Apellido)" />
+
+                    <MudTextField Label="Correo" Variant="Variant.Outlined" Class="mt-4"
+                                  @bind-Value="_Consumidor.Correo" For="@(() => _Consumidor.Correo)" />
+
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Class="ms-3" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save">@boton</MudButton>
+                    
+                    <MudButton ButtonType="ButtonType.Button" Class="ms-4"
+                    Variant="Variant.Filled" 
+                    Color="Color.Warning"
+                               StartIcon="@Icons.Material.Filled.KeyboardBackspace"
+                               OnClick="@(() => _navigationServicio.NavigateTo("/pages/Consumidores"))">Volver</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+
+    </MudGrid>
+</EditForm>
+
+@code {
+    [Parameter]
+    public ConsumidorDTO _Consumidor { get; set; } = new ConsumidorDTO();
+    [Parameter]
+    public int idConsumidor { get; set; }
+    private string noneCodigo = "d-block";
+    private string titulo = "Nuevo Consumidor";
+    private string boton = "Guardar";
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Consumidor", href: null));
+
+
+        if (idConsumidor != 0)
+        {
+            var resultado = await _ConsumidorServicio.Obtener(idConsumidor);
+            if (resultado.status)
+                _Consumidor = resultado.value!;
+
+            titulo = "Editar Consumidor";
+            boton = "Actualizar";
+
+            noneCodigo = "d-block";
+        }
+        else
+        {
+            noneCodigo = "d-none";
+        }
+
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+
+        if(idConsumidor != 0)
+        {
+            var response = await _ConsumidorServicio.Editar(_Consumidor);
+
+            if (response)
+            {
+                _snackBar.Add("El Consumidor fue actualizado", Severity.Success, a => a.VisibleStateDuration = 600);
+                _navigationServicio.NavigateTo("/pages/Consumidores");
+            }
+
+        }
+        else
+        {
+            var response = await _ConsumidorServicio.Crear(_Consumidor);
+
+            if (response.status)
+            {
+                ConsumidorDTO Consumidordto = (ConsumidorDTO)response.value!;
+                _Consumidor = new ConsumidorDTO();
+                await Swal.FireAsync("Consumidor registrado",$"Codigo Consumidor: {Consumidordto.Codigo}", "success");
+            }
+            else
+            {
+                await Swal.FireAsync("Oops...", "No se pudo registrar!", "error");
+            }
+        }
+
+        
+    }
+}

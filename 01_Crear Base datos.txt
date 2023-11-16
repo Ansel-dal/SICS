@@ -1,0 +1,137 @@
+
+
+create database SICS
+
+go
+
+use SICS
+
+go
+
+CREATE TABLE  Categoria(
+IdCategoria int primary key identity,
+Descripcion varchar(50),
+Tipo varchar(50),
+Estado bit default 1,
+FechaCreacion datetime default getdate()
+)
+
+go
+
+
+CREATE TABLE Items(
+IdItem int primary key identity,
+Marca varchar(100),
+Descripcion varchar(100),
+IdCategoria int references CATEGORIA(IdCategoria),
+Codigo varchar(100),
+Ejemplares int,
+Foto varbinary(max),
+Estado bit default 1,
+FechaIngreso datetime default getdate()
+)
+go
+go
+
+CREATE TABLE Productos(
+IdProducto int primary key identity,
+Descripcion varchar(100),
+IdItem int references Items(IdItem),
+Codigo varchar(100),
+Ubicacion varchar(50),
+Foto varbinary(max),
+Factura varbinary(max),
+Estado bit default 1,
+FechaIngreso datetime default getdate()
+)
+GO
+
+create table Usuario(
+idUsuario int primary key identity(1,1),
+nombreApellidos varchar(100),
+correo varchar(40),
+clave varchar(40),
+esActivo bit,
+FechaCreacion datetime default getdate()
+)
+
+go
+
+CREATE TABLE Consumidor(
+IdConsumidor int primary key identity,
+Codigo varchar(50),
+Nombre varchar(50),
+Apellido varchar(50),
+Correo varchar(50),
+Estado bit default 1,
+FechaCreacion datetime default getdate()
+)
+
+go
+
+
+CREATE TABLE EstadoPrestamo(
+IdEstadoPrestamo int primary key,
+Descripcion varchar(50),
+Estado bit default 1,
+FechaCreacion datetime default getdate()
+)
+
+GO
+
+CREATE TABLE Prestamo(
+IdPrestamo int primary key identity,
+Codigo varchar(50),
+IdEstadoPrestamo int references EstadoPrestamo(IdEstadoPrestamo),
+IdConsumidor int references Consumidor(IdConsumidor),
+IdItem int references Items(IdItem),
+FechaDevolucion datetime,
+FechaConfirmacionDevolucion datetime,
+EstadoEntregado varchar(100),
+EstadoRecibido varchar(100),
+FotoEntregado varbinary(max),
+FotoRecibido varbinary(max),
+Estado bit default 1,
+FechaCreacion datetime default getdate()
+)
+
+go
+
+create table NumeroCorrelativo(
+IdNumeroCorrelativo int primary key identity(1,1),
+Prefijo varchar(2) not null,
+Tipo varchar(100) not null,
+UltimoNumero int not null,
+FechaRegistro datetime default getdate()
+)
+
+CREATE TABLE  Pedido(
+IdPedido int primary key identity,
+IdConsumidor int references Consumidor(IdConsumidor),
+FotoPedido varbinary(max),
+FotoPedidoFirmado varbinary(max),
+FechaCreacion datetime default getdate(),
+IdEstadoPedido int references EstadoPedido(IdEstadoPedido)
+)
+
+go
+CREATE TABLE  ProductosPedido(
+IdTransaccion int primary key identity,
+IdPedido int references Pedido(IdPedido),
+IdProducto int references Productos(IdProducto),
+Estado bit default 1,
+
+)
+
+go
+
+CREATE TABLE Entrega(
+IdEntrega int primary key identity,
+Codigo varchar(50),
+IdConsumidor int references Consumidor(IdConsumidor),
+IdItem int references Items(IdItem),
+FotoEntregado varbinary(max),
+Estado bit default 1,
+)
+
+go

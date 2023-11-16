@@ -1,0 +1,27 @@
+﻿
+
+<MudNavMenu>
+    <MudNavLink Href="/pages/dashboard" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Dashboard">Dashboard</MudNavLink>
+
+    <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings">
+        <MudNavLink Href="/pages/usuarios" Icon="@Icons.Material.Filled.PeopleAlt">Usuarios</MudNavLink>
+        <MudNavLink Href="/pages/Consumidores" Icon="@Icons.Material.Filled.AssignmentInd">Consumidores</MudNavLink>
+        <MudNavLink Href="/pages/identificadores" Icon="@Icons.Material.Filled.Code">Identificadores</MudNavLink>
+        <MudNavLink Href="/pages/categorias" Icon="@Icons.Material.Filled.Category">Categorías</MudNavLink>
+        <MudNavLink Href="/pages/Items" Icon="@Icons.Material.Filled.ImportContacts">Items</MudNavLink>
+    </MudNavGroup>
+    <MudNavGroup Title="Stock" Icon="@Icons.Material.Filled.Inventory">
+        <MudNavLink Href="/pages/producto/maquina" Icon="@Icons.Material.Filled.ElectricalServices" Reload="true">Máquinas</MudNavLink>
+        <MudNavLink Href="/pages/producto/herramienta" Icon="@Icons.Material.Filled.Build" Reload="true">Herramientas</MudNavLink>
+        <MudNavLink Href="/pages/producto/insumo" Icon="@Icons.Material.Filled.TipsAndUpdates" Reload="true">Insumos</MudNavLink>
+    </MudNavGroup>
+    <MudNavLink Href="/pages/pedidos/registrar" Icon="@Icons.Material.Filled.AssignmentTurnedIn">Registrar Pedido</MudNavLink>
+    <MudNavGroup Icon="@Icons.Material.Filled.History" Title="Registros">
+        <MudNavLink Href="/pages/historial/pedido" Icon="@Icons.Material.Filled.Assignment">Historial Pedidos</MudNavLink>
+        <MudNavLink Href="/pages/historial/prestamo" Icon="@Icons.Material.Filled.AssignmentReturn">Historial Prestamo</MudNavLink>
+        <MudNavLink Href="/pages/historial/entrega" Icon="@Icons.Material.Filled.AssignmentReturned">Historial Entregas</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>
+
+@code {
+}

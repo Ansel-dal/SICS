@@ -1,0 +1,173 @@
+﻿@page "/pages/historial/pedido"
+@using SICS.Client.Pages.Modales;
+@inject MenuService _menuServicio;
+@inject IPedidoServicio _pedidoServicio;
+@inject IDialogService _dialogServicio
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="12">
+                <div class="d-flex gap-3">
+                    <MudSelect T="string" Label="Estado Pedidos" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter"
+                    @bind-Value="@estadoPedido" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Todos")" />
+                        <MudSelectItem Value="@("Pendiente")" />
+                        <MudSelectItem Value="@("Devuelto")" />
+                    </MudSelect>
+                    <MudTextField @bind-Value="codigoConsumidor" Label="Codigo Consumidor" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Info"
+                               AnchorOrigin="Origin.BottomCenter" Size="Size.Small" OnClick="Buscar">Buscar</MudButton>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12">
+
+                <MudTable Items="@_listaPedido"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<PedidoDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Estado Pedido</MudTh>
+                        <MudTh>Codigo Pedido</MudTh>
+                        <MudTh>Codigo Consumidor</MudTh>
+                        <MudTh>Consumidor</MudTh>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="pedidoRow">
+                        <MudTd DataLabel="Estado Pedido">
+                            @if (pedidoRow.IdEstadoPedidoNavigation!.IdEstadoPedido == 1)
+                            {
+                                <MudChip Color="Color.Error" Size="Size.Small">@pedidoRow.IdEstadoPedidoNavigation.Descripcion</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip Color="Color.Success" Size="Size.Small">@pedidoRow.IdEstadoPedidoNavigation.Descripcion</MudChip>
+                            }
+
+                        </MudTd>
+                        <MudTd DataLabel="Codigo Pedido">@pedidoRow.IdPedido</MudTd>
+                        <MudTd DataLabel="Codigo Consumidor">@pedidoRow.IdConsumidorNavigation.Codigo</MudTd>
+                        <MudTd DataLabel="Consumidor">@(pedidoRow.IdConsumidorNavigation.Nombre + " " + pedidoRow.IdConsumidorNavigation.Apellido)</MudTd>
+                            <MudTd DataLabel="Fecha pedido">@pedidoRow.FechaCreacion.Value.ToString("dd/MM/yyyy")</MudTd>
+                            <MudTd DataLabel="">
+                                @if (pedidoRow.IdEstadoPedidoNavigation!.IdEstadoPedido == 1)
+                            {
+                                <MudFab Color="Color.Info"
+                                        StartIcon="@Icons.Material.Filled.Sync"
+                                        Size="Size.Small"
+                                        IconSize="Size.Small"
+                                        OnClick="@(() => VerDetalle(pedidoRow))" />
+                            }
+                            else
+                            {
+                                <MudFab Color="Color.Secondary"
+                                        StartIcon="@Icons.Material.Filled.Visibility"
+                                        Size="Size.Small"
+                                        IconSize="Size.Small"
+                                        OnClick="@(() => VerDetalle(pedidoRow))" />
+                            }
+
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+@code {
+    List<PedidoDTO> _listaPedido = new List<PedidoDTO>();
+    private string searchString1 = "";
+    private PedidoDTO selectedItem1 = null;
+    private bool _loading = true;
+    string codigoConsumidor = "";
+    string estadoPedido = "Todos";
+
+
+    private async Task ObtenerPedidos()
+    {
+        var result = await _pedidoServicio.Lista();
+
+        if (result.status)
+        {
+            _listaPedido = (List<PedidoDTO>)result.value!;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Historial Pedidos", href: null));
+        await ObtenerPedidos();
+        _loading = false;
+    }
+
+    private bool FilterFunc1(PedidoDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(PedidoDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        if (element.IdEstadoPedidoNavigation.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+       
+
+        if (element.IdConsumidorNavigation.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (string.Concat(element.IdConsumidorNavigation.Nombre, element.IdConsumidorNavigation.Apellido)
+        .Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        
+        return false;
+    }
+
+    private async Task Buscar()
+    {
+        _loading = true;
+        var result = await _pedidoServicio.Buscar(estadoPedido.ToLower(), codigoConsumidor == "" ? "na" : codigoConsumidor);
+        if (result.status)
+        {
+            _listaPedido = (List<PedidoDTO>)result.value!;
+        }
+        _loading = false;
+    }
+
+    private async Task VerDetalle(PedidoDTO modelo)
+    {
+        var parametros = new DialogParameters { ["_pedido"] = modelo };
+        string titulo = "";
+
+        if (modelo.IdEstadoPedidoNavigation!.IdEstadoPedido == 1)
+            titulo = "Devolver Item";
+        else
+            titulo = "Detalle Devolución";
+
+
+        //var dialogo = _dialogServicio.Show<DetallePedido>(titulo, parametros);
+        //var resultado = await dialogo.Result;
+        //if (!resultado.Canceled)
+        //{
+        //    _loading = true;
+        //    await ObtenerPedidos();
+        //    _loading = false;
+        //}
+
+
+
+    }
+}

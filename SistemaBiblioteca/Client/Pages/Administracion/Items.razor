@@ -1,0 +1,183 @@
+﻿@page "/pages/Items"
+@inject MenuService _menuServicio;
+
+
+@inject ICategoriaServicio _categoriaServicio;
+@inject IItemServicio _ItemServicio
+@inject IDialogService _dialogServicio
+@inject ISnackbar _snackBar
+@inject SweetAlertService Swal;
+@inject NavigationManager _navigationServicio;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           OnClick="@(() => _navigationServicio.NavigateTo("/pages/Item"))">
+                    Nuevo Item
+                </MudButton>
+            </MudItem>
+
+            <MudItem xs="12">
+                <div class="d-flex gap-3">
+                    <MudSelect T="string" Label="Categoria" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter"
+                    @bind-Value="@categoriaItem" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Todos")" />
+                        @if (listaCategoria.Any())
+                        {
+                            foreach (var rol in listaCategoria)
+                            {
+                                <MudSelectItem Value="@rol.Descripcion" />
+
+                            }
+                        }
+                    </MudSelect>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Info"
+                               AnchorOrigin="Origin.BottomCenter" Size="Size.Small" OnClick="Buscar">Buscar</MudButton>
+                </div>
+            </MudItem>
+            <MudItem xs="12">
+
+                <MudTable Items="@listaItems"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<ItemDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Foto</MudTh>
+                        <MudTh>Descripcion</MudTh>
+                        <MudTh>Marca</MudTh>
+                        <MudTh>Categoría</MudTh>
+
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="ItemRow">
+                        <MudTd DataLabel="Descripcion">
+                            <MudImage Src="@("data:image/png;base64," + Convert.ToBase64String(ItemRow.Foto))"
+                                      Alt="@ItemRow.Descripcion" Elevation="25" Class="rounded-lg" Width="80" Height="100" />
+                        </MudTd>
+                        <MudTd DataLabel="Titulo">@ItemRow.Descripcion</MudTd>
+                        <MudTd DataLabel="Autor">@ItemRow.Marca</MudTd>
+                        <MudTd DataLabel="Categoria">@ItemRow.IdCategoriaNavigation.Descripcion</MudTd>
+
+                        <MudTd DataLabel="">
+
+                            <MudFab Color="Color.Primary"
+                                    StartIcon="@Icons.Material.Filled.Edit"
+                                    Size="Size.Small" Href="@("/pages/Item/" + ItemRow.IdItem)"
+                                    IconSize="Size.Small" />
+
+                            <MudFab Color="Color.Error"
+                                    StartIcon="@Icons.Material.Filled.Delete"
+                                    Size="Size.Small"
+                                    IconSize="Size.Small"
+                                    OnClick="@(() => EliminarItem(ItemRow))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+
+
+@code {
+
+    List<ItemDTO> listaItems = new List<ItemDTO>();
+    private string searchString1 = "";
+    private ItemDTO selectedItem1 = null;
+    private bool _loading = true;
+    string categoriaItem = "Todos";
+    List<CategoriaDTO> listaCategoria = new List<CategoriaDTO>();
+
+    private async Task ObtenerItems()
+    {
+        var result = await _ItemServicio.Lista();
+
+        if (result.status)
+        {
+            listaItems = (List<ItemDTO>)result.value!;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Items", href: null));
+        await ObtenerItems();
+
+        var resultado = await _categoriaServicio.Lista();
+        if (resultado.status)
+        {
+            listaCategoria = resultado.value;
+        }
+
+        _loading = false;
+    }
+    private bool FilterFunc1(ItemDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(ItemDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Marca.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Marca.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.IdCategoriaNavigation.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+
+    private async Task EliminarItem(ItemDTO Item)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta seguro?",
+                Text = $"Eliminar Item: {Item.IdItem} - {Item.Descripcion}",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Si, eliminar",
+                CancelButtonText = "No, volver"
+            });
+
+        if (result.IsConfirmed)
+        {
+            var resultado = await _ItemServicio.Eliminar(Item.IdItem);
+
+            if (resultado)
+            {
+                _snackBar.Add("El Item fue eliminado", Severity.Success, a => a.VisibleStateDuration = 600);
+                await ObtenerItems();
+            }
+            else
+                _snackBar.Add("No se pudo eliminar", Severity.Error, a => a.VisibleStateDuration = 600);
+        }
+    }
+
+    private async Task Buscar()
+    {
+        _loading = true;
+        var result = await _ItemServicio.Filtrar(categoriaItem.ToLower());
+
+        if (result.status)
+        {
+            listaItems = (List<ItemDTO>)result.value!;
+        }
+        _loading = false;
+    }
+}

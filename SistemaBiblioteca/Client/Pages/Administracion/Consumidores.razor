@@ -1,0 +1,142 @@
+﻿@page "/pages/Consumidores"
+@inject MenuService _menuServicio;
+
+
+
+@inject IConsumidorServicio _ConsumidorServicio
+@inject IDialogService _dialogServicio
+@inject ISnackbar _snackBar
+@inject SweetAlertService Swal;
+@inject NavigationManager _navigationServicio;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           OnClick="@(() => _navigationServicio.NavigateTo("/pages/Consumidor"))">
+                    Nuevo Consumidor
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12">
+
+                <MudTable Items="@listaConsumidores"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<ConsumidorDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Codigo</MudTh>
+                        <MudTh>Nombre</MudTh>
+                        <MudTh>Apellido</MudTh>
+                        <MudTh>Correo</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="ConsumidorRow">
+                        <MudTd DataLabel="Codigo">@ConsumidorRow.Codigo</MudTd>
+                        <MudTd DataLabel="Nombre">@ConsumidorRow.Nombre</MudTd>
+                        <MudTd DataLabel="Apellido">@ConsumidorRow.Apellido</MudTd>
+                        <MudTd DataLabel="Correo">@ConsumidorRow.Correo</MudTd>
+                        <MudTd DataLabel="">
+
+                            <MudFab Color="Color.Primary"
+                                    StartIcon="@Icons.Material.Filled.Edit"
+                                    Size="Size.Small" Href="@("/pages/Consumidor/" + ConsumidorRow.IdConsumidor)"
+                                    IconSize="Size.Small" />
+
+                            <MudFab Color="Color.Error"
+                                    StartIcon="@Icons.Material.Filled.Delete"
+                                    Size="Size.Small"
+                                    IconSize="Size.Small"
+                                    OnClick="@(() => EliminarConsumidor(ConsumidorRow))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    List<ConsumidorDTO> listaConsumidores = new List<ConsumidorDTO>();
+    private string searchString1 = "";
+    private ConsumidorDTO selectedItem1 = null;
+    private bool _loading = true;
+
+    private async Task ObtenerConsumidores()
+    {
+        var result = await _ConsumidorServicio.Lista();
+
+        if (result.status)
+        {
+            listaConsumidores = (List<ConsumidorDTO>)result.value!;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Consumidores", href: null));
+        await ObtenerConsumidores();
+        _loading = false;
+    }
+
+    private bool FilterFunc1(ConsumidorDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(ConsumidorDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Nombre.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Apellido.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Correo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+
+
+
+    private async Task EliminarConsumidor(ConsumidorDTO Consumidor)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta seguro?",
+                Text = $"Eliminar Consumidor: {Consumidor.Nombre}",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Si, eliminar",
+                CancelButtonText = "No, volver"
+            });
+
+        if (result.IsConfirmed)
+        {
+            var resultado = await _ConsumidorServicio.Eliminar(Consumidor.IdConsumidor);
+
+            if (resultado)
+            {
+                _snackBar.Add("El Consumidor fue eliminado", Severity.Success, a => a.VisibleStateDuration = 600);
+                await ObtenerConsumidores();
+            }
+            else
+                _snackBar.Add("No se pudo eliminar", Severity.Error, a => a.VisibleStateDuration = 500);
+        }
+    }
+
+}

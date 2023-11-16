@@ -1,0 +1,74 @@
+﻿@inject IIdentificadoresServicio _IdentificadoresServicio
+@inject ISnackbar _snackBar
+
+<MudDialog Style="width:400px">
+
+    <DialogContent>
+        <MudContainer Style="max-height: 400px; overflow-y: scroll" Class="m-0 p-0">
+
+
+            <EditForm Model="@_identificador">
+                <DataAnnotationsValidator />
+                <MudTextField @bind-Value="@_identificador.Prefijo" Class="mb-3"
+                              Label="Prefijo" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Sharp.Adjust" />
+
+                <MudTextField @bind-Value="@_identificador.Tipo" Class="mb-3"
+                              Label="Tipo" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.PermIdentity" />
+
+            </EditForm>
+
+
+        </MudContainer>
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Guardar">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public IdentificadoresDTO _identificador { get; set; } = new IdentificadoresDTO();
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task Guardar()
+    {
+        string _mensaje = "";
+        bool _resultado;
+
+        if (_identificador.IdNumeroCorrelativo != 0)
+        {
+            _resultado = await _IdentificadoresServicio.Editar(_identificador);
+            _mensaje = "Usuario fue modificado";
+        }
+        else
+        {
+            var response = await _IdentificadoresServicio.Crear(_identificador);
+            _resultado = response.status;
+            _mensaje = "Usuario fue creado";
+        }
+
+        if (_resultado)
+        {
+            _snackBar.Add(_mensaje, Severity.Success, a => a.VisibleStateDuration = 600);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+            _snackBar.Add("Error al guardar cambios", Severity.Error, a => a.VisibleStateDuration = 600);
+
+    }
+}

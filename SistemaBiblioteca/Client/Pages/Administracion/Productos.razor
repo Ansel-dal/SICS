@@ -1,0 +1,204 @@
+﻿@page "/pages/Producto"
+@page "/pages/Producto/{categoria}"
+
+@inject NavigationManager _navigationServicio;
+@using SICS.Client.Pages.Modales;
+@inject MenuService _menuServicio;
+@inject IProductoServicio _productoServicio;
+@inject ICategoriaServicio _categoriaServicio;
+@inject IDialogService _dialogServicio
+@inject ISnackbar _snackBar
+@inject SweetAlertService Swal;
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            @if (categoria != null)
+            {
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Color="Color.Primary"
+                               OnClick="AbrirNuevoProducto">
+                        Agregar @categoria
+                    </MudButton>
+                </MudItem>
+            }
+            <MudItem xs="12">
+
+                <MudTable Items="@_listaProducto"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<ProductoDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        @*<MudTh>Foto</MudTh>*@
+                        <MudTh>Ítem</MudTh>
+                        <MudTh>Código producto</MudTh>
+                        <MudTh>Descripción</MudTh>
+                        <MudTh>Ubicación</MudTh>
+                        <MudTh>Fecha de alta</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="productoRow">
+
+                        @*<MudTd DataLabel="Foto">@productoRow.Foto</MudTd>*@
+                        <MudTd DataLabel="Ítem">@productoRow.IdItemNavigation.Descripcion</MudTd>
+                        <MudTd DataLabel="Código producto">@productoRow.IdProducto</MudTd>
+                        <MudTd DataLabel="Descripción">@productoRow.Descripcion</MudTd>
+                        <MudTd DataLabel="Unicación">@productoRow.Ubicacion</MudTd>
+                        <MudTd DataLabel="Fecha de alta">@productoRow.FechaIngreso</MudTd>
+                        <MudTd DataLabel="Descripcion">
+                            <MudImage Src="@("data:image/png;base64," + Convert.ToBase64String(productoRow.Factura))"
+                                      Alt="@productoRow.Descripcion" Elevation="25" Class="rounded-lg" Width="80" Height="100" />
+                        </MudTd>
+                        <MudTd DataLabel="">
+                            <MudFab Color="Color.Primary"
+                                    StartIcon="@Icons.Material.Filled.Edit"
+                                    Size="Size.Small"
+                                    IconSize="Size.Small"
+                                    OnClick="@(() => AbrirEditarProducto(productoRow))" />
+                            <MudFab Color="Color.Error"
+                                    StartIcon="@Icons.Material.Filled.Delete"
+                                    Size="Size.Small"
+                                    IconSize="Size.Small"
+                                    OnClick="@(() => EliminarProducto(productoRow))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string categoria { get; set; }
+    List<ProductoDTO> _listaProducto = new List<ProductoDTO>();
+    private string searchString1 = "";
+    private ProductoDTO selectedItem1 = null;
+    private bool _loading = true;
+    string codigoConsumidor = "";
+    string estadoPrestamo = "Todos";
+
+    int IdItem;
+    private async Task ObtenerProducto()
+    {
+        var result = await _productoServicio.Filtrar(categoria.ToLower()); ;
+
+        if (result.status)
+        {
+            _listaProducto = (List<ProductoDTO>)result.value!;
+        }
+    }
+   
+    protected override async Task OnInitializedAsync()
+    {
+
+        _loading = true;
+        _menuServicio.SetMenu(new BreadcrumbItem("Categorías", href: null));
+        await ObtenerProducto();
+        _loading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ObtenerProducto();
+    }
+
+    private bool FilterFunc1(ProductoDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(ProductoDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+        //if (element.IdEstadoProductoNavigation.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+        //if (element.IdConsumidorNavigation.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+        //if (string.Concat(element.IdConsumidorNavigation.Nombre, element.IdConsumidorNavigation.Apellido)
+        //.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        //    return true;
+
+
+        return false;
+    }
+
+    private async Task Buscar()
+    {
+        _loading = true;
+        //var result = await _productoServicio.Buscar(estadoPrestamo.ToLower(), codigoConsumidor == "" ? "na" : codigoConsumidor);
+        //if (result.status)
+        //{
+        //    _listaProducto = (List<ProductoDTO>)result.value!;
+        //}
+        _loading = false;
+    }
+
+
+
+    private async Task EliminarProducto(ProductoDTO Producto)
+    {
+        SweetAlertResult result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta seguro?",
+                Text = $"Eliminar Categoría: ({Producto.IdProducto}) {Producto.Descripcion}",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Si, eliminar",
+                CancelButtonText = "No, volver"
+            });
+
+        if (result.IsConfirmed)
+        {
+            var resultado = await _productoServicio.Eliminar(Producto.IdProducto);
+
+            if (resultado)
+            {
+                _snackBar.Add("La categoría fue eliminada", Severity.Success, a => a.VisibleStateDuration = 600);
+                await ObtenerProducto();
+            }
+            else
+                _snackBar.Add("No se pudo eliminar", Severity.Error, a => a.VisibleStateDuration = 500);
+        }
+
+    }
+
+    private async Task AbrirNuevoProducto()
+    {
+        var parametros = new DialogParameters { ["categoria"] = categoria };
+        var dialogo = _dialogServicio.Show<MdProducto>("Nuevo Producto",parametros);
+        var resultado = await dialogo.Result;
+
+        if (!resultado.Canceled)
+        {
+            await ObtenerProducto();
+        }
+    }
+
+    private async Task AbrirEditarProducto(ProductoDTO Producto)
+    {
+        var parametros = new DialogParameters { ["_producto"] = Producto, ["categoria"] = categoria };
+        var dialogo = _dialogServicio.Show<MdProducto>("Editar Producto", parametros);
+        var resultado = await dialogo.Result;
+        if (!resultado.Canceled)
+        {
+            await ObtenerProducto();
+        }
+    }
+}

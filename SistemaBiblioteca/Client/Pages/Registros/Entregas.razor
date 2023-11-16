@@ -1,0 +1,132 @@
+﻿@page "/pages/historial/entrega"
+@using SICS.Client.Pages.Modales;
+@inject MenuService _menuServicio;
+@inject IEntregaServicio _entregaServicio;
+@inject IDialogService _dialogServicio
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-5">
+
+    <MudPaper Elevation="3" Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="12">
+                <div class="d-flex gap-3">
+                    
+                    <MudTextField @bind-Value="codigoConsumidor" Label="Codigo Consumidor" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Info"
+                               AnchorOrigin="Origin.BottomCenter" Size="Size.Small" OnClick="Buscar">Buscar</MudButton>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12">
+
+                <MudTable Items="@_listaEntrega"
+                          Dense="true"
+                          Striped="true" Bordered="true"
+                          Filter="new Func<EntregaDTO,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+                          Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <ToolBarContent>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Estado Entrega</MudTh>
+                        <MudTh>Codigo Entrega</MudTh>
+                        <MudTh>Codigo Consumidor</MudTh>
+                        <MudTh>Consumidor</MudTh>
+                        <MudTh>Item</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="entregaRow">
+                        <MudTd DataLabel="Estado Entrega">                           
+                                <MudChip Color="Color.Success" Size="Size.Small">Entregado</MudChip>     
+                        </MudTd>
+                        <MudTd DataLabel="Codigo Entrega">@entregaRow.IdEntrega</MudTd>
+                        <MudTd DataLabel="Codigo Consumidor">@entregaRow.IdConsumidorNavigation.Codigo</MudTd>
+                        <MudTd DataLabel="Consumidor">@(entregaRow.IdConsumidorNavigation.Nombre + " " + entregaRow.IdConsumidorNavigation.Apellido)</MudTd>
+                            <MudTd DataLabel="Item">@entregaRow.IdItemNavigation.Descripcion</MudTd>
+                        <MudTd DataLabel="">
+                           
+                                <MudFab Color="Color.Secondary"
+                                    StartIcon="@Icons.Material.Filled.Visibility"
+                                    Size="Size.Small"
+                                    IconSize="Size.Small" 
+                                    OnClick="@(() => VerDetalle(entregaRow))" />
+                            
+                        
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+
+
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>
+@code {
+    List<EntregaDTO> _listaEntrega = new List<EntregaDTO>();
+    private string searchString1 = "";
+    private EntregaDTO selectedItem1 = null;
+    private bool _loading = true;
+    string codigoConsumidor = "";
+
+
+    private async Task ObtenerEntregas()
+    {
+        var result = await _entregaServicio.Lista();
+
+        if (result.status)
+        {
+            _listaEntrega = (List<EntregaDTO>)result.value!;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Historial Entregas", href: null));
+        await ObtenerEntregas();
+        _loading = false;
+    }
+
+    private bool FilterFunc1(EntregaDTO element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(EntregaDTO element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+
+       
+
+        if (element.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (element.IdConsumidorNavigation.Codigo.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (string.Concat(element.IdConsumidorNavigation.Nombre, element.IdConsumidorNavigation.Apellido)
+        .Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (element.IdItemNavigation.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task Buscar()
+    {
+        _loading = true;
+        var result = await _entregaServicio.Buscar(codigoConsumidor == "" ? "na":codigoConsumidor);
+        if (result.status)
+        {
+            _listaEntrega = (List<EntregaDTO>)result.value!;
+        }
+        _loading = false;
+    }
+
+    private async Task VerDetalle(EntregaDTO modelo)
+    {
+                
+    }
+}

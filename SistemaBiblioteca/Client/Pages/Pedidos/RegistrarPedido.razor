@@ -1,0 +1,85 @@
+﻿@page "/pages/pedidos/registrar"
+@inject MenuService _menuServicio;
+
+<MudGrid>
+    <MudPaper Class="pa-4" Width="100%">
+        <MudGrid>
+            <MudItem xs="6">
+                <MudText Class="d-flex align-center justify-center mud-width-full pt-8">Pedido P0001</MudText>
+            </MudItem>
+            <MudItem xs="6">
+                <MudText Class="d-flex align-center justify-center mud-width-full pt-8">Destinatario: IANTech Solutions</MudText>
+            </MudItem>
+            <MudItem xs="6">
+                <MudText Class="d-flex align-center justify-center mud-width-full ">@DateTime.Now.ToLongDateString() a las @DateTime.Now.ToShortTimeString() hs</MudText>
+            </MudItem><MudItem xs="6">
+                <MudText Class="d-flex align-center justify-center mud-width-full ">Consumidor NC00001</MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+    <MudItem xs="12">
+        <MudTable Items="@Elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+            <HeaderContent>
+                <MudTh>Nr</MudTh>
+                <MudTh>Sign</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Position</MudTh>
+                <MudTh>Molar mass</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nr">@context.Number</MudTd>
+                <MudTd DataLabel="Sign">@context.Sign</MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Molar mass">@context.Molar</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudItem>
+    <br />
+    <br />
+
+    <MudItem xs="6">
+        <center>
+            <MudDivider Class="mt-12 mb-4" Style="border:1px solid black;width:65%;" />
+        </center>
+        <MudText Class="d-flex align-center justify-center mud-width-full ">Firma responsable entrega</MudText>
+    </MudItem>
+    <MudItem xs="6">
+        <center>
+            <MudDivider Class="mt-12 mb-4" Style="border:1px solid black;width:65%;" />
+        </center>
+        <MudText Class="d-flex align-center justify-center mud-width-full ">Aclaración responsable entrega</MudText>
+    </MudItem>
+
+    <MudItem xs="6">
+        <center>
+            <MudDivider Class="mt-12 mb-4" Style="border:1px solid black;width:65%;" />
+        </center>
+        <MudText Class="d-flex align-center justify-center mud-width-full ">Firma responsable recepción</MudText>
+    </MudItem>
+    <MudItem xs="6">
+        <center>
+            <MudDivider Class="mt-12 mb-4" Style="border:1px solid black;width:65%;" />
+        </center>
+        <MudText Class="d-flex align-center justify-center mud-width-full ">Aclaración responsable recepción</MudText>
+    </MudItem>
+
+</MudGrid>
+@code {
+
+    private bool _loading = false;
+    List<elemento> Elements = new() { new() { Number = 1, Sign = "Asd", Name = "name", Molar = 3 }, new() { Number = 3, Sign = "rrrrrr", Name = "name 2", Molar = 7 } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Registrar pedido", href: null));
+
+    }
+    public class elemento
+    {
+        public int Number { get; set; }
+        public string Sign { get; set; }
+        public string Name { get; set; }
+        public int Molar { get; set; }
+
+    }
+}

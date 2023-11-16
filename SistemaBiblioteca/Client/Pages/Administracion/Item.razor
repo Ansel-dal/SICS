@@ -1,0 +1,162 @@
+﻿@page "/pages/Item"
+@page "/pages/Item/{idItem:int}"
+@inject MenuService _menuServicio;
+
+@inject ICategoriaServicio _categoriaServicio;
+@inject IItemServicio _ItemServicio;
+@inject SweetAlertService Swal;
+@inject ISnackbar _snackBar
+@inject NavigationManager _navigationServicio;
+
+
+<EditForm Model="@_Item" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid>
+        <MudItem xs="12" sm="7">
+            <MudCard>
+
+                <MudCardContent>
+                    <MudText Align="Align.Left">@titulo</MudText>
+
+
+                    <MudTextField Label="Descripcion" Variant="Variant.Outlined" Class="mt-4"
+                    @bind-Value="_Item.Descripcion" For="@(() => _Item.Descripcion)" />
+
+
+                    <MudTextField Label="Marca" Variant="Variant.Outlined" Class="mt-4"
+                    @bind-Value="_Item.Marca" For="@(() => _Item.Marca)" />
+
+
+                    <MudSelect Label="Categoria" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mt-4"
+                    @bind-Value="categoriaSeleccionado">
+                        @if (listaCategoria.Any())
+                        {
+                            foreach (var rol in listaCategoria)
+                            {
+                                <MudSelectItem Value="@rol">@rol.Descripcion</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+
+                    
+
+                    
+
+                    @if (!bClearInputFile)
+                    {
+                        <InputFile OnChange="UploadItem" class="form-control mt-4"></InputFile>
+                    }
+
+
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Class="ms-3" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save">@boton</MudButton>
+
+                    <MudButton ButtonType="ButtonType.Button" Class="ms-4"
+                               Variant="Variant.Filled"
+                               Color="Color.Warning"
+                               StartIcon="@Icons.Material.Filled.KeyboardBackspace"
+                               OnClick="@(() => _navigationServicio.NavigateTo("/pages/Items"))">Volver</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+
+    </MudGrid>
+</EditForm>
+
+@code {
+    [Parameter]
+    public ItemDTO _Item { get; set; } = new ItemDTO();
+    [Parameter]
+    public int idItem { get; set; }
+    List<CategoriaDTO> listaCategoria = new List<CategoriaDTO>();
+    public CategoriaDTO categoriaSeleccionado;
+    private string noneCodigo = "d-block";
+    private string titulo = "Nuevo Item";
+    private string boton = "Guardar";
+    private bool bClearInputFile = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _menuServicio.SetMenu(new BreadcrumbItem("Item", href: null));
+        _Item.Foto = null;
+
+        if (idItem != 0)
+        {
+            var response = await _ItemServicio.Obtener(idItem);
+            if (response.status)
+            {
+                _Item = response.value!;
+            }
+
+            titulo = "Editar Item";
+            boton = "Actualizar";
+        }
+
+
+        var resultado = await _categoriaServicio.Lista();
+
+
+        if (resultado.status)
+        {
+            listaCategoria = resultado.value!;
+            if (idItem != 0)
+            {
+                categoriaSeleccionado = listaCategoria.FirstOrDefault(p => p.IdCategoria == _Item.IdCategoria)!;
+            }
+            else
+                categoriaSeleccionado = listaCategoria.First();
+        }
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+        _Item.IdCategoria = categoriaSeleccionado.IdCategoria;
+
+        if (idItem != 0)
+        {
+            var response = await _ItemServicio.Editar(_Item);
+
+            if (response)
+            {
+                _snackBar.Add("El Item fue actualizado", Severity.Success, a => a.VisibleStateDuration = 600);
+                _navigationServicio.NavigateTo("/pages/Items");
+            }
+
+        }
+        else
+        {
+            var response = await _ItemServicio.Crear(_Item);
+
+            if (response.status)
+            {
+                _Item = new ItemDTO();
+                _snackBar.Add("El Item fue registrado", Severity.Success, a => a.VisibleStateDuration = 1000);
+            }
+            else
+            {
+                await Swal.FireAsync("Oops...", "No se pudo registrar!", "error");
+            }
+        }
+
+    }
+
+    private void ClearInputFile()
+    {
+        bClearInputFile = true;
+        StateHasChanged();
+        bClearInputFile = false;
+        StateHasChanged();
+    }
+
+    private async Task UploadItem(InputFileChangeEventArgs e)
+    {
+        var format = "image/png";
+        var resizedFile = await e.File.RequestImageFileAsync(format, 200, 200);
+        var buffer = new byte[resizedFile.Size];
+
+        await resizedFile.OpenReadStream().ReadAsync(buffer);
+        _Item.Foto = buffer;
+    }
+}

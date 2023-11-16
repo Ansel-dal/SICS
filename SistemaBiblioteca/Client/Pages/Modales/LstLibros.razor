@@ -1,0 +1,76 @@
+﻿@inject IItemServicio _ItemServicio;
+<MudDialog DisableSidePadding="true" Style="width:500px">
+
+    <TitleContent>
+        <div class="d-flex gap-2">
+            <MudTextField @bind-Value="TextValue" Label="Buscar Item" Variant="Variant.Text" Margin="Margin.Dense"></MudTextField>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Search"
+            Variant="Variant.Filled" Color="Color.Info" OnClick="Buscar"
+            Size="Size.Medium" />
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudDivider />
+        <MudContainer Style="max-height: 300px; overflow-y: scroll">
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="@mostrarLoad" />
+            <MudList Clickable="true">
+                @foreach (var item in listaItems)
+                {
+                    <MudListItem OnClick="@(() => Seleccionar(item))">
+
+                        <MudStack Row="true">
+                            <MudImage Width="90" Height="90" Alt="img" Src="@("data:image/png;base64," + Convert.ToBase64String(item.Foto))"></MudImage>
+                            <MudStack Justify="Justify.Center" Spacing="0">
+                                <MudText Typo="Typo.body1" Color="Color.Primary">@item.Descripcion</MudText>
+                                <MudText Align="Align.Left"><b>Autor: </b> @item.Marca</MudText>
+                                <MudText Align="Align.Left"><b>Categoria: </b> @item.IdCategoriaNavigation.Descripcion</MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudListItem>
+                }
+
+            </MudList>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Volver">Volver</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; }
+    string TextValue = "";
+    List<ItemDTO> listaItems = new List<ItemDTO>();
+    string mostrarLoad { get; set; } = "d-none";
+    private void Volver()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task Buscar()
+    {
+        mostrarLoad = "d-block";
+        if(TextValue == "")
+            listaItems = new List<ItemDTO>();
+        else
+        {
+            var response = await _ItemServicio.Buscar(TextValue);
+
+            if (response.status)
+            {
+
+                listaItems = (List<ItemDTO>)response.value!;
+            }
+
+        }
+        mostrarLoad = "d-none";
+
+    }
+
+    private async Task Seleccionar(ItemDTO item)
+    {
+        MudDialog.Close(DialogResult.Ok(item));
+    }
+}
